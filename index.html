@@ -3,57 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Soldier Run 3D</title>
+    <title>3D Soldier Run</title>
     <style>
-        body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; font-family: sans-serif; touch-action: none; }
-        
-        /* The 3D Canvas */
+        /* Fullscreen & Anti-Scroll for Mobile/Poki */
+        body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; font-family: 'Segoe UI', sans-serif; touch-action: none; }
         #gameCanvas { display: block; width: 100vw; height: 100vh; }
 
-        /* UI Overlay */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box;
-        }
-
-        .top-bar { display: flex; justify-content: space-between; font-size: 24px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; }
-        
-        /* Intro / Pause Screen */
-        #intro-screen {
+        /* UI Overlays */
+        .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8); z-index: 100; pointer-events: auto;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(0, 0, 0, 0.85); z-index: 100; color: white;
         }
-        
-        .play-btn {
-            background: #4caf50; color: white; border: none; padding: 20px 50px;
-            font-size: 30px; font-weight: bold; cursor: pointer; border-radius: 10px;
-            text-transform: uppercase; box-shadow: 0 5px 0 #2e7d32; transition: 0.1s;
-        }
-        .play-btn:active { transform: translateY(5px); box-shadow: none; }
+        .hidden { display: none !important; }
 
-        .banner { width: 300px; height: 250px; background: #333; color: white; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 2px dashed #666; }
+        /* Buttons & Ads */
+        .btn {
+            background: #4caf50; color: white; border: none; padding: 15px 40px;
+            font-size: 24px; font-weight: bold; cursor: pointer; border-radius: 8px;
+            text-transform: uppercase; box-shadow: 0 5px 0 #2e7d32; margin-top: 20px;
+        }
+        .btn:active { transform: translateY(5px); box-shadow: none; }
+        .ad-banner { width: 300px; height: 250px; background: #333; display: flex; align-items: center; justify-content: center; border: 2px dashed #777; font-size: 20px; color: #aaa; }
+
+        /* HUD (Heads Up Display) */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; padding: 15px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 10px; pointer-events: none; z-index: 50;
+        }
+        .top-stats { display: flex; justify-content: space-between; font-size: 22px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; }
+        
+        /* Level Progress Bar */
+        .progress-container { width: 100%; max-width: 400px; height: 15px; background: rgba(0,0,0,0.5); border-radius: 10px; margin: 0 auto; border: 2px solid #fff; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: #ffeb3b; transition: 0.1s linear; }
+
+        /* Pause Button */
+        #pauseBtn {
+            position: absolute; top: 15px; right: 15px; background: #f44336; border: none; color: white;
+            font-size: 20px; padding: 10px 15px; border-radius: 5px; cursor: pointer; pointer-events: auto; font-weight: bold;
+        }
     </style>
 </head>
 <body>
 
-    <div id="intro-screen">
-        <div class="banner">🎬 Poki Ad Banner Here</div>
-        <button class="play-btn" onclick="startGame()">▶ Run!</button>
+    <div id="intro-screen" class="overlay">
+        <div class="ad-banner">🎬 Poki Pre-Roll Ad</div>
+        <button class="btn" onclick="startGame()">▶ Play Game</button>
     </div>
 
-    <div id="ui-layer">
-        <div class="top-bar">
-            <div>Level: <span id="levelDisplay">1</span></div>
+    <div id="pause-screen" class="overlay hidden">
+        <h2>Game Paused</h2>
+        <button class="btn" onclick="togglePause()">▶ Resume</button>
+    </div>
+
+    <div id="hud" class="hidden">
+        <div class="top-stats">
+            <div>Level <span id="levelDisplay">1</span></div>
             <div>Score: <span id="scoreDisplay">0</span></div>
         </div>
+        <div class="progress-container">
+            <div id="progressBar" class="progress-fill"></div>
+        </div>
     </div>
+    
+    <button id="pauseBtn" class="hidden" onclick="togglePause()">⏸</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script src="engine.js"></script>
-    
     <script src="level1.js"></script>
+    <script src="level2.js"></script>
 
 </body>
 </html>
