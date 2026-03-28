@@ -1,4 +1,3 @@
-// --- GLOBAL SETUP ---
 window.GAME_LEVELS = window.GAME_LEVELS || [];
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
@@ -9,32 +8,38 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Lighting
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
 dirLight.position.set(10, 20, 10);
 scene.add(dirLight);
 
-// Geometries & Materials
 const soldierMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
 const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-const obstacleMat = new THREE.MeshStandardMaterial({ color: 0xf44336 });
-const groundMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+const bossMat = new THREE.MeshStandardMaterial({ color: 0x9c27b0 }); // Purple Boss
+const groundMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
 
-let soldier, ground;
-let bullets = [], obstacles = [];
-let currentLevelIndex = 0, levelData, score = 0, frameCount = 0;
-let isPlaying = false, isPaused = false;
+let soldier, ground, bossMesh;
+let bullets = [], gates = [];
+let currentLevelIndex = 0, levelData, ammo = 0, frameCount = 0;
+let isPlaying = false, isPaused = false, bossHp = 0, bossMaxHp = 0;
 
-// Controls State
-let isDragging = false;
-let previousX = 0;
+let isDragging = false, previousX = 0;
 
-// --- INITIALIZATION ---
+// --- DYNAMIC TEXTURE FOR GATES ---
+function createGateTexture(text, colorStr) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256; canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = colorStr; ctx.fillRect(0, 0, 256, 256);
+    ctx.fillStyle = 'white'; ctx.font = 'bold 80px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 128);
+    return new THREE.CanvasTexture(canvas);
+}
+
 function initScene() {
     ground = new THREE.Mesh(new THREE.PlaneGeometry(20, 2000), groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.z = -800;
+    ground.rotation.x = -Math.PI / 2; ground.position.z = -800;
     scene.add(ground);
 
     soldier = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), soldierMat);
@@ -44,34 +49,46 @@ function initScene() {
 
 function loadLevel(index) {
     if (index >= window.GAME_LEVELS.length) {
-        alert("🏆 You beat the game!");
+        document.getElementById('endMessage').innerText = "You Beat the Game!";
+        document.getElementById('game-over-screen').classList.remove('hidden');
         return;
     }
     levelData = window.GAME_LEVELS[index];
     currentLevelIndex = index;
+    ammo = levelData.startAmmo;
+    document.getElementById('ammoDisplay').innerText = ammo;
     document.getElementById('levelDisplay').innerText = index + 1;
-    document.getElementById('progressBar').style.width = '0%';
     
     soldier.position.set(0, 1, 0);
     camera.position.set(0, 5, 6);
     
+    // Clear old level data
     bullets.forEach(b => scene.remove(b.mesh)); bullets = [];
-    obstacles.forEach(o => scene.remove(o.mesh)); obstacles = [];
+    gates.forEach(g => scene.remove(g.mesh)); gates = [];
+    if (bossMesh) scene.remove(bossMesh);
 
-    levelData.obstacles.forEach(obs => {
-        let mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), obstacleMat);
-        mesh.position.set(obs.x, 1, obs.z);
+    // Spawn Gates
+    levelData.gates.forEach(g => {
+        let tex = createGateTexture(g.text, g.color);
+        let mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
+        let mesh = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), mat);
+        mesh.position.set(g.x, 1.5, g.z);
         scene.add(mesh);
-        obstacles.push({ mesh: mesh, hp: obs.hp, maxHp: obs.hp });
+        gates.push({ mesh: mesh, op: g.op, val: g.val, active: true });
     });
+
+    // Spawn Boss
+    bossHp = levelData.boss.hp; bossMaxHp = levelData.boss.hp;
+    bossMesh = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 4), bossMat);
+    bossMesh.position.set(0, 3, levelData.boss.z);
+    scene.add(bossMesh);
 }
 
-// --- UI CONTROLS ---
+// --- CONTROLS & UI ---
 window.startGame = function() {
     document.getElementById('intro-screen').classList.add('hidden');
     document.getElementById('hud').classList.remove('hidden');
     document.getElementById('pauseBtn').classList.remove('hidden');
-    
     if (!soldier) initScene();
     loadLevel(0);
     isPlaying = true;
@@ -80,67 +97,88 @@ window.startGame = function() {
 
 window.togglePause = function() {
     isPaused = !isPaused;
-    if (isPaused) {
-        document.getElementById('pause-screen').classList.remove('hidden');
-    } else {
-        document.getElementById('pause-screen').classList.add('hidden');
-    }
+    document.getElementById('pause-screen').classList.toggle('hidden', !isPaused);
 }
 
-// --- INPUT HANDLING (Touch & Mouse) ---
 function getClientX(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-
 window.addEventListener('pointerdown', (e) => { isDragging = true; previousX = getClientX(e); });
 window.addEventListener('pointerup', () => { isDragging = false; });
 window.addEventListener('pointermove', (e) => {
     if (!isDragging || !isPlaying || isPaused) return;
     let currentX = getClientX(e);
-    let deltaX = currentX - previousX;
-    
-    soldier.position.x += deltaX * 0.03; // Drag sensitivity
-    if (soldier.position.x > 8) soldier.position.x = 8;   // Right bound
-    if (soldier.position.x < -8) soldier.position.x = -8; // Left bound
-    
+    soldier.position.x += (currentX - previousX) * 0.03;
+    if (soldier.position.x > 8) soldier.position.x = 8;
+    if (soldier.position.x < -8) soldier.position.x = -8;
     previousX = currentX;
 });
 
-// --- POKI SCALING (Responsive Resize) ---
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// --- GAME LOOP ---
+// --- MAIN LOOP ---
+function gameOver(won) {
+    isPlaying = false;
+    document.getElementById('pauseBtn').classList.add('hidden');
+    if (won) {
+        setTimeout(() => { loadLevel(currentLevelIndex + 1); isPlaying = true; animate(); }, 1500);
+    } else {
+        document.getElementById('endMessage').innerText = "Boss Destroyed You!";
+        document.getElementById('endMessage').style.color = "#f44336";
+        document.getElementById('game-over-screen').classList.remove('hidden');
+    }
+}
+
 function animate() {
     if (!isPlaying) return;
     requestAnimationFrame(animate);
-    
-    if (isPaused) {
-        renderer.render(scene, camera); // Keep rendering the paused frame
-        return;
-    }
+    if (isPaused) { renderer.render(scene, camera); return; }
 
-    // 1. Movement & Camera
+    // 1. Move Soldier
     soldier.position.z -= levelData.runSpeed;
     camera.position.z = soldier.position.z + 6;
-    camera.position.x = soldier.position.x * 0.5; // Smooth camera sway
+    camera.position.x = soldier.position.x * 0.4;
 
-    // Update Progress Bar
-    let progress = Math.min(100, (Math.abs(soldier.position.z) / levelData.trackLength) * 100);
-    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('progressBar').style.width = Math.min(100, (Math.abs(soldier.position.z) / levelData.trackLength) * 100) + '%';
 
-    // 2. Auto-Shooting
+    // 2. Gate Collision
+    gates.forEach(g => {
+        if (!g.active) return;
+        // If passed the gate's Z, and close enough on X
+        if (soldier.position.z < g.mesh.position.z && soldier.position.z > g.mesh.position.z - 2) {
+            if (Math.abs(soldier.position.x - g.mesh.position.x) < 2) {
+                // Apply Math!
+                if (g.op === 'add') ammo += g.val;
+                if (g.op === 'sub') ammo -= g.val;
+                if (g.op === 'mul') ammo *= g.val;
+                if (g.op === 'div') ammo = Math.floor(ammo / g.val);
+                
+                if (ammo < 0) ammo = 0;
+                document.getElementById('ammoDisplay').innerText = ammo;
+                
+                // Hide gate and deactivate
+                scene.remove(g.mesh);
+                g.active = false;
+            }
+        }
+    });
+
+    // 3. Shooting logic (Costs Ammo!)
     frameCount++;
-    if (frameCount % levelData.fireRate === 0) {
+    if (frameCount % 10 === 0 && ammo > 0) {
+        ammo--; // Deduct ammo
+        document.getElementById('ammoDisplay').innerText = ammo;
+        
         let bullet = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), bulletMat);
         bullet.position.copy(soldier.position);
         bullet.position.z -= 1.5;
         scene.add(bullet);
-        bullets.push({ mesh: bullet, speed: 1.2 });
+        bullets.push({ mesh: bullet, speed: 1.5 });
     }
 
-    // 3. Update Bullets & Collision
+    // 4. Bullet Collision with Boss
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
         b.mesh.position.z -= b.speed;
@@ -149,31 +187,25 @@ function animate() {
             scene.remove(b.mesh); bullets.splice(i, 1); continue;
         }
 
-        for (let j = obstacles.length - 1; j >= 0; j--) {
-            let obs = obstacles[j];
-            if (b.mesh.position.distanceTo(obs.mesh.position) < 1.5) {
-                obs.hp -= 1;
-                scene.remove(b.mesh); bullets.splice(i, 1);
-                
-                if (obs.hp <= 0) {
-                    scene.remove(obs.mesh); obstacles.splice(j, 1);
-                    score += 10;
-                    document.getElementById('scoreDisplay').innerText = score;
-                }
-                break;
+        if (bossHp > 0 && b.mesh.position.distanceTo(bossMesh.position) < 3) {
+            bossHp -= 1;
+            scene.remove(b.mesh); bullets.splice(i, 1);
+            
+            // Flash Boss red when hit
+            bossMesh.material.color.setHex(0xff0000);
+            setTimeout(() => { if(bossMesh) bossMesh.material.color.setHex(0x9c27b0); }, 50);
+
+            if (bossHp <= 0) {
+                scene.remove(bossMesh);
+                bossMesh = null;
+                gameOver(true); // You won the level!
             }
         }
     }
 
-    // 4. Level Completion
-    if (soldier.position.z < -levelData.trackLength) {
-        isPlaying = false;
-        setTimeout(() => {
-            loadLevel(currentLevelIndex + 1);
-            isPlaying = true;
-            animate();
-        }, 1500); // Wait 1.5 seconds before starting next level
-        return;
+    // 5. Hit Boss without killing it
+    if (bossHp > 0 && soldier.position.z < levelData.boss.z + 2) {
+        gameOver(false); // You died!
     }
 
     renderer.render(scene, camera);
