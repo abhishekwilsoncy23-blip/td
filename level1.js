@@ -1,4 +1,4 @@
-// Automatically create the array if it doesn't exist
+// Ensure the array exists
 window.GAME_LEVELS = window.GAME_LEVELS || [];
 
 // Push Level 1 Data
