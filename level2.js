@@ -15,8 +15,5 @@ window.GAME_LEVELS.push({
     enemies: [
         { hp: 30, x: 0, z: -250 } 
     ],
-    boss: {
-        hp: 180,
-        z: -550
-    }
+    boss: { hp: 180, z: -550 }
 });
