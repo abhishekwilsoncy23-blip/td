@@ -1,7 +1,5 @@
-// Ensure the array exists
 window.GAME_LEVELS = window.GAME_LEVELS || [];
 
-// Push Level 1 Data
 window.GAME_LEVELS.push({
     startingGold: 100,
     path: [
