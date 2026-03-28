@@ -10,20 +10,24 @@
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); z-index: 100; color: white; }
         .hidden { display: none !important; }
         .btn { background: #4caf50; color: white; border: none; padding: 15px 40px; font-size: 24px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; box-shadow: 0 5px 0 #2e7d32; margin-top: 20px; }
-        .btn:active { transform: translateY(5px); box-shadow: none; }
         
         #hud { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; pointer-events: none; z-index: 50; }
         .top-stats { display: flex; justify-content: space-between; font-size: 28px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; }
         #ammoDisplay { color: #ffeb3b; font-size: 32px; }
+        
         .progress-container { width: 100%; max-width: 400px; height: 15px; background: rgba(0,0,0,0.5); border-radius: 10px; margin: 0 auto; border: 2px solid #fff; overflow: hidden; }
         .progress-fill { height: 100%; width: 0%; background: #ffeb3b; transition: 0.1s linear; }
+        
+        /* New Target HP UI */
+        #targetHpContainer { text-align: center; font-weight: bold; font-size: 24px; color: #ff5252; text-shadow: 2px 2px 4px #000; margin-top: 10px; transition: opacity 0.2s; }
+        
         #pauseBtn { position: absolute; top: 15px; right: 15px; background: #f44336; border: none; color: white; font-size: 20px; padding: 10px 15px; border-radius: 5px; cursor: pointer; pointer-events: auto; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="intro-screen" class="overlay">
-        <h1>Run & Gun</h1>
+        <h1>Run & Gun 3D</h1>
         <button class="btn" onclick="startGame()">▶ Play Game</button>
     </div>
 
@@ -43,6 +47,8 @@
             <div>Ammo: <span id="ammoDisplay">10</span></div>
         </div>
         <div class="progress-container"><div id="progressBar" class="progress-fill"></div></div>
+        
+        <div id="targetHpContainer" class="hidden">Enemy HP: <span id="targetHpDisplay">0</span></div>
     </div>
     
     <button id="pauseBtn" class="hidden" onclick="togglePause()">⏸</button>
