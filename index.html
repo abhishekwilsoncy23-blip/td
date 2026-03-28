@@ -2,22 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Emoji Archer Defense</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Defend The Fortress!</title>
     <style>
-        body { background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
-        canvas { background: #7cfc00; border: 5px solid #3e2723; cursor: crosshair; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .ui { margin: 10px; font-size: 20px; font-weight: bold; }
+        body { 
+            background: #111; color: #fff; font-family: sans-serif; 
+            margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; 
+            height: 100vh; width: 100vw; overflow: hidden; /* Prevents mobile scrolling */
+        }
+        
+        /* Poki Requirement: Responsive Container */
+        .game-wrapper {
+            position: relative;
+            display: flex;
+            width: 100%; max-width: 1050px; 
+            aspect-ratio: 21 / 10; /* Fits canvas + sidebar nicely */
+            background: #3e2723; padding: 10px; border-radius: 10px;
+            box-sizing: border-box;
+        }
+
+        /* Intro / Banner Overlay */
+        #intro-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border-radius: 10px;
+        }
+        .banner-placeholder {
+            width: 80%; height: 50%; background: #444; border: 4px dashed #888;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 24px; color: #aaa; margin-bottom: 20px;
+        }
+        .play-btn {
+            background: #ffeb3b; color: #000; border: none; padding: 15px 40px;
+            font-size: 24px; font-weight: bold; cursor: pointer; border-radius: 8px;
+            text-transform: uppercase; box-shadow: 0 5px 0 #bcaa28;
+        }
+        .play-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        canvas { 
+            background: #4caf50; border: 3px solid #2e1503; border-radius: 5px;
+            width: 75%; height: 100%; object-fit: contain; /* Keeps ratio on any screen */
+        }
+
+        .sidebar {
+            width: 25%; margin-left: 10px; display: flex; flex-direction: column; gap: 10px;
+            overflow-y: auto;
+        }
+        .panel { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 8px; }
+        .tower-btn {
+            background: #5d4037; color: white; border: 2px solid #3e2723; padding: 8px; 
+            border-radius: 5px; cursor: pointer; text-align: center; font-weight: bold;
+        }
+        .tower-btn.selected { border-color: #ffeb3b; background: #8d6e63; }
+        
+        .controls { display: flex; gap: 10px; margin-top: auto; }
+        .action-btn { flex: 1; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 5px; border: none;}
+        #startWaveBtn { background: #4caf50; color: white; }
+        #pauseBtn { background: #f44336; color: white; }
     </style>
 </head>
 <body>
-    <div class="ui">💰 Gold: <span id="gold">100</span> | ❤️ Health: <span id="baseHealth">10</span></div>
-    <canvas id="gameCanvas" width="800" height="500"></canvas>
-    <p>Click grass to place 🏹 Archer (Cost: 30). Defend the 🏰 Castle!</p>
 
-    <!-- LOAD THE ENGINE FIRST -->
-    <script src="engine.js"></script>
+<div class="game-wrapper">
+    <div id="intro-screen">
+        <div class="banner-placeholder">🎬 Intro Video / Poki Ad Banner Here</div>
+        <button class="play-btn" onclick="startGame()">▶ Play / Skip</button>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
     
-    <!-- CHANGE THIS LINE TO LOAD DIFFERENT LEVELS (level1.js, level2.js, etc.) -->
-    <script src="level1.js"></script>
+    <div class="sidebar">
+        <div class="panel">
+            <b>🏰 Lvl:</b> <span id="levelDisplay">1</span> | <b>🌊 Wave:</b> <span id="waveDisplay">0</span><br>
+            <b>💰 Gold:</b> <span id="gold">100</span> | <b>❤️ HP:</b> <span id="baseHealth">10</span>
+        </div>
+
+        <div class="panel" id="shop">
+            <div class="tower-btn selected" onclick="selectTower('archer')" id="btn-archer">🏹 Archer (30g)</div><br>
+            <div class="tower-btn" onclick="selectTower('catapult')" id="btn-catapult">🪨 Catapult (60g)</div><br>
+            <div class="tower-btn" onclick="selectTower('mage')" id="btn-mage">⚡ Mage (100g)</div>
+        </div>
+
+        <div id="message" style="text-align: center; color: #ffeb3b; font-size: 14px;">Select a tower!</div>
+
+        <div class="controls">
+            <button id="startWaveBtn" class="action-btn" onclick="startNextWave()">Start Wave</button>
+            <button id="pauseBtn" class="action-btn" onclick="togglePause()">⏸ Pause</button>
+        </div>
+    </div>
+</div>
+
+<script src="engine.js"></script>
+
+<script src="level1.js"></script>
+<script src="level2.js"></script>
+
 </body>
 </html>
