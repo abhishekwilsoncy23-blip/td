@@ -13,25 +13,26 @@ const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
 dirLight.position.set(10, 20, 10);
 scene.add(dirLight);
 
+// Materials
 const soldierMat = new THREE.MeshStandardMaterial({ color: 0x4caf50 });
 const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
 const bossMat = new THREE.MeshStandardMaterial({ color: 0x9c27b0 }); 
 const miniEnemyMat = new THREE.MeshStandardMaterial({ color: 0xff9800 }); 
+const mineMat = new THREE.MeshStandardMaterial({ color: 0x111111 }); // Black Mines
 const groundMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
 
 let soldier, ground, bossMesh;
-let bullets = [], gates = [], miniEnemies = [];
+let bullets = [], gates = [], miniEnemies = [], mines = [];
 let currentLevelIndex = 0, levelData, ammo = 0, frameCount = 0;
 let isPlaying = false, isPaused = false, bossHp = 0;
 
 let isDragging = false, previousX = 0;
 
-// ALL GATES ARE NOW FROSTED GLASS TO CONFUSE PLAYERS
 function createGateTexture(text) {
     const canvas = document.createElement('canvas');
     canvas.width = 256; canvas.height = 256;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(200, 200, 200, 0.4)'; // Neutral grey/glass
+    ctx.fillStyle = 'rgba(200, 200, 200, 0.4)'; 
     ctx.fillRect(0, 0, 256, 256);
     ctx.fillStyle = 'white'; ctx.font = 'bold 80px sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -66,9 +67,11 @@ function loadLevel(index) {
     soldier.position.set(0, 1, 0);
     camera.position.set(0, 5, 6);
     
+    // Clear old level
     bullets.forEach(b => scene.remove(b.mesh)); bullets = [];
     gates.forEach(g => scene.remove(g.mesh)); gates = [];
     miniEnemies.forEach(e => scene.remove(e.mesh)); miniEnemies = [];
+    mines.forEach(m => scene.remove(m.mesh)); mines = [];
     if (bossMesh) scene.remove(bossMesh);
 
     levelData.gates.forEach(g => {
@@ -86,6 +89,16 @@ function loadLevel(index) {
             mesh.position.set(e.x, 2, e.z);
             scene.add(mesh);
             miniEnemies.push({ mesh: mesh, hp: e.hp });
+        });
+    }
+
+    // Spawn Mines (Flat black cylinders)
+    if (levelData.mines) {
+        levelData.mines.forEach(m => {
+            let mesh = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.4, 16), mineMat);
+            mesh.position.set(m.x, 0.2, m.z);
+            scene.add(mesh);
+            mines.push({ mesh: mesh });
         });
     }
 
@@ -127,14 +140,14 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-function gameOver(won) {
+function gameOver(won, message = "An Enemy Destroyed You!") {
     isPlaying = false;
     document.getElementById('pauseBtn').classList.add('hidden');
     document.getElementById('targetHpContainer').classList.add('hidden');
     if (won) {
         setTimeout(() => { loadLevel(currentLevelIndex + 1); isPlaying = true; animate(); }, 1500);
     } else {
-        document.getElementById('endMessage').innerText = "An Enemy Destroyed You!";
+        document.getElementById('endMessage').innerText = message;
         document.getElementById('endMessage').style.color = "#f44336";
         document.getElementById('game-over-screen').classList.remove('hidden');
     }
@@ -168,23 +181,19 @@ function animate() {
         }
     });
 
-    // --- TARGETING & AUTO-AIM SYSTEM ---
+    // Auto Aim
     let activeTarget = null;
-    let targetDist = 120; // How close before we start shooting
-
-    // 1. Find closest living mini-enemy
+    let targetDist = 120; 
     for (let en of miniEnemies) {
         if (en.mesh.position.z < soldier.position.z && soldier.position.z - en.mesh.position.z < targetDist) {
             activeTarget = { mesh: en.mesh, hp: en.hp, isBoss: false };
             break;
         }
     }
-    // 2. If no mini-enemy, target Boss
     if (!activeTarget && bossHp > 0 && bossMesh && soldier.position.z - bossMesh.position.z < targetDist) {
         activeTarget = { mesh: bossMesh, hp: bossHp, isBoss: true };
     }
 
-    // Update HP UI
     const hpUi = document.getElementById('targetHpContainer');
     if (activeTarget) {
         hpUi.classList.remove('hidden');
@@ -193,9 +202,9 @@ function animate() {
         hpUi.classList.add('hidden');
     }
 
-    // --- SHOOTING ---
+    // Shooting
     frameCount++;
-    if (activeTarget && frameCount % 8 === 0 && ammo > 0) { // Shoots a bit faster now
+    if (activeTarget && frameCount % 8 === 0 && ammo > 0) { 
         ammo--;
         document.getElementById('ammoDisplay').innerText = ammo;
         
@@ -204,27 +213,20 @@ function animate() {
         bullet.position.z -= 1.5;
         scene.add(bullet);
 
-        // Vector Math: Calculate direction from soldier to target
         let direction = new THREE.Vector3().subVectors(activeTarget.mesh.position, soldier.position).normalize();
-        
-        bullets.push({ mesh: bullet, velocity: direction.multiplyScalar(2.0) }); // Speed is 2.0
+        bullets.push({ mesh: bullet, velocity: direction.multiplyScalar(2.0) });
     }
 
-    // --- BULLET MOVEMENT & COLLISION ---
+    // Bullet Move & Collision
     for (let i = bullets.length - 1; i >= 0; i--) {
         let b = bullets[i];
-        
-        // Move bullet along calculated vector
         b.mesh.position.add(b.velocity);
-        
         let bulletHit = false;
 
-        // Cleanup missed bullets
         if (b.mesh.position.z < soldier.position.z - 150) {
             scene.remove(b.mesh); bullets.splice(i, 1); continue;
         }
 
-        // Hit Mini Enemies
         for (let j = miniEnemies.length - 1; j >= 0; j--) {
             let en = miniEnemies[j];
             if (b.mesh.position.distanceTo(en.mesh.position) < 2.5) {
@@ -236,14 +238,13 @@ function animate() {
 
                 if (en.hp <= 0) {
                     scene.remove(en.mesh); miniEnemies.splice(j, 1);
-                    hpUi.classList.add('hidden'); // Hide UI when dead
+                    hpUi.classList.add('hidden');
                 }
                 break;
             }
         }
         if (bulletHit) continue;
 
-        // Hit Boss
         if (bossHp > 0 && b.mesh.position.distanceTo(bossMesh.position) < 3.5) {
             bossHp -= 1;
             scene.remove(b.mesh); bullets.splice(i, 1);
@@ -259,15 +260,26 @@ function animate() {
         }
     }
 
-    // Player Crashing Logic
+    // Player Death Checks
     for (let j = 0; j < miniEnemies.length; j++) {
         let en = miniEnemies[j];
         if (soldier.position.z < en.mesh.position.z + 1.5 && soldier.position.z > en.mesh.position.z - 1.5) {
-            if (Math.abs(soldier.position.x - en.mesh.position.x) < 2) gameOver(false);
+            if (Math.abs(soldier.position.x - en.mesh.position.x) < 2) gameOver(false, "An Enemy Destroyed You!");
         }
     }
+    
+    // Check Mine Collision
+    for (let j = 0; j < mines.length; j++) {
+        let m = mines[j];
+        if (soldier.position.z < m.mesh.position.z + 1.5 && soldier.position.z > m.mesh.position.z - 1.5) {
+            if (Math.abs(soldier.position.x - m.mesh.position.x) < 2) {
+                gameOver(false, "You Stepped on a Mine! 💥");
+            }
+        }
+    }
+
     if (bossHp > 0 && soldier.position.z < levelData.boss.z + 2) {
-        gameOver(false);
+        gameOver(false, "The Boss Crushed You!");
     }
 
     renderer.render(scene, camera);
