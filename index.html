@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Emoji Archer Defense</title>
+    <style>
+        body { background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; }
+        canvas { background: #7cfc00; border: 5px solid #3e2723; cursor: crosshair; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .ui { margin: 10px; font-size: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="ui">💰 Gold: <span id="gold">100</span> | ❤️ Health: <span id="baseHealth">10</span></div>
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+    <p>Click grass to place 🏹 Archer (Cost: 30). Defend the 🏰 Castle!</p>
+
+    <!-- LOAD THE ENGINE FIRST -->
+    <script src="engine.js"></script>
+    
+    <!-- CHANGE THIS LINE TO LOAD DIFFERENT LEVELS (level1.js, level2.js, etc.) -->
+    <script src="level1.js"></script>
+</body>
+</html>
