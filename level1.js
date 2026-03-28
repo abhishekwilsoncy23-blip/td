@@ -1,15 +1,19 @@
-// Define the path for this level (X, Y coordinates)
-const levelPath = [
-    {x: 0, y: 250}, {x: 200, y: 250}, {x: 200, y: 100}, 
-    {x: 500, y: 100}, {x: 500, y: 400}, {x: 800, y: 400}
-];
+// Automatically create the array if it doesn't exist
+window.GAME_LEVELS = window.GAME_LEVELS || [];
 
-// Define waves: {type, health, speed, goldReward, count}
-const levelWaves = [
-    { icon: '🧟', hp: 10, speed: 1, reward: 5, count: 5 },
-    { icon: '🕷️', hp: 5, speed: 2, reward: 3, count: 10 },
-    { icon: '👹', hp: 50, speed: 0.5, reward: 20, count: 1 }
-];
-
-// Start the engine with this data
-initLevel(levelPath, levelWaves);
+// Push Level 1 Data
+window.GAME_LEVELS.push({
+    startingGold: 100,
+    path: [
+        {x: 0, y: 250}, {x: 200, y: 250}, {x: 200, y: 100}, 
+        {x: 600, y: 100}, {x: 600, y: 400}, {x: 750, y: 400}
+    ],
+    buildNodes: [
+        {x: 100, y: 180}, {x: 270, y: 180}, {x: 400, y: 180}, 
+        {x: 270, y: 300}, {x: 520, y: 300}, {x: 680, y: 300}
+    ],
+    waves: [
+        [ { icon: '🧟', hp: 10, speed: 1.5, reward: 5 }, { icon: '🧟', hp: 10, speed: 1.5, reward: 5 } ],
+        [ { icon: '🕷️', hp: 6, speed: 2.5, reward: 4 }, { icon: '👹', hp: 50, speed: 0.8, reward: 20 } ]
+    ]
+});
