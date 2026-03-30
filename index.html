@@ -3,407 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rescue Rush: Scalable Engine with Lives</title>
+    <title>Math Runner 3D</title>
     <style>
-        body { margin: 0; background: #111; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', Courier, monospace; touch-action: none; }
+        body { margin: 0; padding: 0; overflow: hidden; background: #87CEEB; font-family: 'Segoe UI', sans-serif; touch-action: none; }
+        #gameCanvas { display: block; width: 100vw; height: 100vh; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); z-index: 100; color: white; }
+        .hidden { display: none !important; }
+        .btn { background: #4caf50; color: white; border: none; padding: 15px 40px; font-size: 24px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; box-shadow: 0 5px 0 #2e7d32; margin-top: 20px; }
+        .btn-red { background: #f44336; box-shadow: 0 5px 0 #c62828; }
         
-        #rotateDevice { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: #000; color: #fff; z-index: 1000; justify-content: center; align-items: center; text-align: center; font-size: 24px; font-weight: bold; padding: 20px; box-sizing: border-box;}
-        @media (orientation: portrait) {
-            #rotateDevice { display: flex; }
-            #gameContainer { display: none !important; }
-        }
-
-        #gameContainer { position: relative; background: #000; display: block; }
-        canvas { background: #0d1a0d; image-rendering: pixelated; display: block; width: 100%; height: 100%; }
+        #hud { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; pointer-events: none; z-index: 50; }
+        .top-stats { display: flex; justify-content: space-between; font-size: 28px; font-weight: bold; color: white; text-shadow: 2px 2px 4px #000; }
+        #ammoDisplay { color: #ffeb3b; font-size: 32px; }
         
-        /* NEW HUD FOR LIVES */
-        #hud { position: absolute; top: 10px; left: 15px; color: #fff; font-size: 20px; font-weight: bold; text-shadow: 2px 2px 0 #000; z-index: 10; pointer-events: none; display: none; }
-        .life-icon { color: #e53935; }
-
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; z-index: 50;}
-        .panel { background: rgba(0,0,0,0.92); padding: 20px 30px; border: 2px solid #fff; border-radius: 10px; pointer-events: auto; max-width: 90%; max-height: 90%; overflow-y: auto; box-sizing: border-box; }
-        h1 { color: #ffd700; margin-top: 0; font-size: 28px; text-transform: uppercase; text-shadow: 2px 2px 0 #000; }
-        button { background: #2d5a27; color: white; border: 2px solid #4ade80; padding: 10px 20px; font-size: 16px; font-weight: bold; cursor: pointer; font-family: inherit; margin: 10px; border-radius: 5px; transition: transform 0.1s; }
-        button:active { transform: scale(0.95); background: #1b4d1b; }
+        .progress-container { width: 100%; max-width: 400px; height: 15px; background: rgba(0,0,0,0.5); border-radius: 10px; margin: 0 auto; border: 2px solid #fff; overflow: hidden; }
+        .progress-fill { height: 100%; width: 0%; background: #ffeb3b; transition: 0.1s linear; }
         
-        #btnPause { position: absolute; top: 10px; right: 10px; padding: 5px 15px; font-size: 14px; pointer-events: auto; display: none; z-index: 10; }
-
-        #mobileControls { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; display: none; pointer-events: auto; z-index: 10; }
-        .dpad-btn { position: absolute; width: 45px; height: 45px; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); border-radius: 8px; color: white; font-weight: bold; line-height: 41px; text-align: center; user-select: none; }
-        .dpad-btn:active { background: rgba(255,255,255,0.6); }
-        #up { top: 0; left: 47px; } #down { bottom: 0; left: 47px; }
-        #left { top: 47px; left: 0; } #right { top: 47px; right: 0; }
-        @media (max-width: 768px) { #mobileControls { display: block; } }
-
-        #introScreen { background: #000; z-index: 100; }
-        .video-placeholder { width: 90%; max-width: 450px; height: 200px; background: #1a1a1a; display: flex; flex-direction: column; justify-content: center; align-items: center; border: 2px solid #555; margin-bottom: 20px; color: #aaa; }
+        #targetHpContainer { text-align: center; font-weight: bold; font-size: 24px; color: #ff5252; text-shadow: 2px 2px 4px #000; margin-top: 10px; transition: opacity 0.2s; }
         
-        #mapContainer { margin: 15px 0; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px dashed #555; }
-        #mapContainer h3 { margin: 0 0 10px 0; font-size: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 2px; }
-        #routeMap { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; max-width: 300px; }
-        .map-node { width: 30px; height: 30px; background: #222; border: 2px solid #444; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: #777; }
-        .map-node.completed { background: #2d5a27; border-color: #4ade80; color: white; }
-        .map-node.current { background: #ffd700; border-color: #d84315; color: black; box-shadow: 0 0 12px rgba(255,215,0,0.8); animation: pulse 1s infinite alternate; }
-        .map-node.hostage { background: #d84315; border-color: #fff; border-radius: 5px; color: white; }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.2); } }
+        #pauseBtn { position: absolute; top: 15px; right: 15px; background: #f44336; border: none; color: white; font-size: 20px; padding: 10px 15px; border-radius: 5px; cursor: pointer; pointer-events: auto; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="rotateDevice">Please Rotate Your Device to Landscape Mode</div>
-
-<div id="gameContainer">
-    <canvas id="gameCanvas"></canvas>
-    <div id="hud">LIVES: <span id="livesDisplay">3</span></div>
-    <button id="btnPause" onclick="pauseGame()">|| PAUSE</button>
-    
-    <div id="introScreen" class="overlay">
-        <div class="video-placeholder">
-            <h2 style="color:#fff; margin-bottom: 5px;">[ STORY INTRO VIDEO ]</h2>
-            <p>"They took them to the jungle..."</p>
-        </div>
-        <h2>Deploying in <span id="introTimer">5</span>...</h2>
-        <button onclick="skipIntro()">SKIP >></button>
+    <div id="intro-screen" class="overlay">
+        <h1>Run & Gun 3D</h1>
+        <button class="btn" onclick="startGame()">▶ Play Game</button>
     </div>
 
-    <div id="uiLayer" class="overlay" style="display:none; pointer-events:none;">
-        <div id="mainMenu" class="panel" style="display:none;">
-            <h1>Rescue Rush</h1>
-            <p>Push stones, extinguish fires, avoid wolves!</p>
-            <button onclick="startGame()">START MISSION</button>
-        </div>
-        
-        <div id="messageScreen" class="panel" style="display:none;">
-            <h1 id="msgTitle">Game Over</h1>
-            <div id="mapContainer" style="display:none;">
-                <h3>Route to Hostage</h3>
-                <div id="routeMap"></div>
-            </div>
-            <button id="btnAction" onclick="handleAction()">RESTART</button>
-        </div>
+    <div id="pause-screen" class="overlay hidden">
+        <h2>Game Paused</h2>
+        <button class="btn" onclick="togglePause()">▶ Resume</button>
+        <button class="btn btn-red" onclick="resetProgress()">🗑️ Reset Data</button>
     </div>
 
-    <div id="mobileControls">
-        <div class="dpad-btn" id="up">W</div>
-        <div class="dpad-btn" id="down">S</div>
-        <div class="dpad-btn" id="left">A</div>
-        <div class="dpad-btn" id="right">D</div>
+    <div id="game-over-screen" class="overlay hidden">
+        <h1 id="endMessage" style="font-size: 40px; color: #f44336;">You Died!</h1>
+        <button class="btn" onclick="location.reload()">Restart</button>
     </div>
-</div>
 
-<script src="level1.js"></script>
-<script src="level2.js"></script>
-<script>
-// --- ENGINE SETUP ---
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const TILE_SIZE = 40;
-canvas.width = 640; canvas.height = 360; 
-
-let gameState = "INTRO"; 
-let currentLevelIndex = 0;
-let level = [];
-let player = { x: 0, y: 0 };
-let wolves = []; 
-let hasKey = false;
-let hasExtinguisher = false; 
-let tickCounter = 0;
-let camX = 0, camY = 0;
-let currentActionType = ""; 
-
-// NEW LIVES VARIABLE
-let lives = 3; 
-
-// --- SPRITE SHEET GENERATOR ---
-const spriteSheet = document.createElement('canvas');
-spriteSheet.width = 160; spriteSheet.height = 120; 
-const sCtx = spriteSheet.getContext('2d');
-
-function buildSpriteSheet() {
-    sCtx.fillStyle = '#2d5a27'; sCtx.fillRect(0,0,40,40);
-    for(let i=0; i<80; i++) { sCtx.fillStyle = Math.random() > 0.5 ? '#3d7a36' : '#1e3d1a'; sCtx.fillRect(Math.random()*38, Math.random()*38, 2, 4); }
-    sCtx.fillStyle = '#d2b48c'; sCtx.fillRect(40, 0, 40, 40); sCtx.fillStyle = '#c0a078'; sCtx.fillRect(40, 15, 40, 4); sCtx.fillRect(40, 30, 40, 4); sCtx.fillStyle = '#8B4513'; sCtx.fillRect(56, 0, 8, 15); sCtx.fillStyle = '#2d5a27'; sCtx.beginPath(); sCtx.arc(60, 5, 12, 0, 7); sCtx.fill(); 
-    sCtx.fillStyle = '#555'; sCtx.beginPath(); sCtx.arc(100,22,18,0,7); sCtx.fill(); sCtx.fillStyle = '#888'; sCtx.beginPath(); sCtx.arc(96,18,12,0,7); sCtx.fill();
-    sCtx.fillStyle = '#5d4037'; sCtx.fillRect(125,5,30,35); sCtx.fillStyle = '#3e2723'; sCtx.fillRect(128,8,24,32);
-    sCtx.fillStyle='#ffb300'; sCtx.beginPath(); sCtx.arc(15, 60, 8, 0, 7); sCtx.fill(); sCtx.fillStyle='#000'; sCtx.beginPath(); sCtx.arc(15, 60, 4, 0, 7); sCtx.fill(); sCtx.fillStyle='#ffb300'; sCtx.fillRect(20, 58, 16, 4); sCtx.fillRect(28, 62, 4, 6); sCtx.fillRect(34, 62, 4, 4); 
-    sCtx.fillStyle='#d84315'; sCtx.beginPath(); sCtx.moveTo(60,75); sCtx.lineTo(50,55); sCtx.lineTo(70,55); sCtx.fill(); sCtx.fillStyle='#ff9800'; sCtx.beginPath(); sCtx.moveTo(60,75); sCtx.lineTo(55,60); sCtx.lineTo(65,60); sCtx.fill();
-    sCtx.fillStyle='#757575'; sCtx.fillRect(85,55,25,15); sCtx.fillStyle='#616161'; sCtx.fillRect(82,50,15,12); sCtx.fillStyle='#9e9e9e'; sCtx.fillRect(86,65,4,10); sCtx.fillRect(104,65,4,10); sCtx.fillStyle='#ff0000'; sCtx.fillRect(85,53,2,2);
-    sCtx.fillStyle = '#ffdbac'; sCtx.fillRect(132,50,16,14); sCtx.fillStyle = '#1e88e5'; sCtx.fillRect(130,62,20,12); sCtx.fillStyle = '#333'; sCtx.fillRect(134,74,4,6); sCtx.fillRect(142,74,4,6);
-    sCtx.fillStyle = '#e53935'; sCtx.fillRect(10, 85, 20, 30); sCtx.fillStyle = '#222'; sCtx.fillRect(15, 80, 10, 5); sCtx.fillStyle = '#fff'; sCtx.fillRect(10, 95, 20, 10); 
-}
-buildSpriteSheet();
-function drawSprite(srcX, srcY, destX, destY) { ctx.drawImage(spriteSheet, srcX, srcY, 40, 40, destX, destY, 40, 40); }
-
-// --- UI LOGIC ---
-let introTime = 5;
-let introInterval = setInterval(() => {
-    introTime--;
-    document.getElementById('introTimer').innerText = introTime;
-    if(introTime <= 0) skipIntro();
-}, 1000);
-
-function skipIntro() {
-    clearInterval(introInterval);
-    document.getElementById('introScreen').style.display = 'none';
-    document.getElementById('uiLayer').style.display = 'flex';
-    document.getElementById('mainMenu').style.display = 'block';
-    gameState = "MENU";
-}
-
-function updateHUD() {
-    let hearts = "";
-    for(let i=0; i<lives; i++) hearts += "❤ ";
-    document.getElementById('livesDisplay').innerHTML = `<span class="life-icon">${hearts}</span>`;
-}
-
-function generateRouteMap() {
-    const mapDiv = document.getElementById('routeMap');
-    mapDiv.innerHTML = ''; 
-    const totalLevels = window.levels ? window.levels.length : 0;
+    <div id="hud" class="hidden">
+        <div class="top-stats">
+            <div>Level <span id="levelDisplay">1</span></div>
+            <div>Ammo: <span id="ammoDisplay">10</span></div>
+        </div>
+        <div class="progress-container"><div id="progressBar" class="progress-fill"></div></div>
+        <div id="targetHpContainer" class="hidden">Enemy HP: <span id="targetHpDisplay">0</span></div>
+    </div>
     
-    for(let i = 0; i < totalLevels; i++) {
-        let node = document.createElement('div');
-        node.className = 'map-node';
-        if(i < currentLevelIndex) { node.classList.add('completed'); node.innerHTML = '✓'; }
-        else if (i === currentLevelIndex) { node.classList.add('current'); node.innerHTML = i + 1; }
-        else if (i === totalLevels - 1) { node.classList.add('hostage'); node.innerHTML = 'H'; }
-        else { node.innerHTML = i + 1; }
-        mapDiv.appendChild(node);
-    }
-}
+    <button id="pauseBtn" class="hidden" onclick="togglePause()">⏸</button>
 
-function showScreen(title, btnText, actionType, showMap = false) {
-    document.getElementById('uiLayer').style.display = 'flex';
-    document.getElementById('messageScreen').style.display = 'block';
-    document.getElementById('msgTitle').innerText = title;
-    document.getElementById('btnAction').innerText = btnText;
-    document.getElementById('btnPause').style.display = 'none';
-    document.getElementById('hud').style.display = 'none'; // Hide HUD in menus
-    
-    if (showMap) { document.getElementById('mapContainer').style.display = 'block'; generateRouteMap(); }
-    else { document.getElementById('mapContainer').style.display = 'none'; }
-    currentActionType = actionType;
-}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="engine.js"></script>
+    <script src="level1.js"></script>
+    <script src="level2.js"></script>
+    <script src="level3.js"></script>
 
-function handleAction() {
-    if (currentActionType === "RESUME") {
-        gameState = "PLAYING";
-        document.getElementById('uiLayer').style.display = 'none';
-        document.getElementById('messageScreen').style.display = 'none';
-        document.getElementById('btnPause').style.display = 'block';
-        document.getElementById('hud').style.display = 'block';
-    } else if (currentActionType === "RESTART") {
-        loadLevel(currentLevelIndex);
-    } else if (currentActionType === "FULL_RESTART") {
-        lives = 3; 
-        currentLevelIndex = 0;
-        loadLevel(currentLevelIndex);
-    } else if (currentActionType === "NEXT") {
-        currentLevelIndex++;
-        if (currentLevelIndex < window.levels.length) {
-            loadLevel(currentLevelIndex); 
-        } else { 
-            showScreen("ALL MISSIONS CLEARED!", "PLAY AGAIN", "FULL_RESTART", false); 
-        }
-    }
-}
-
-function handleDeath(reason) {
-    lives--;
-    updateHUD();
-    gameState = "GAMEOVER";
-    if (lives > 0) {
-        showScreen(reason + " (-1 Life)", "TRY AGAIN", "RESTART", false);
-    } else {
-        showScreen(reason + " - GAME OVER", "RESTART MISSION", "FULL_RESTART", false);
-    }
-}
-
-function pauseGame() {
-    if(gameState === 'PLAYING') {
-        gameState = 'PAUSED';
-        showScreen('MISSION PAUSED', 'RESUME MISSION', 'RESUME', true);
-    }
-}
-window.addEventListener('blur', () => { if(gameState === 'PLAYING') pauseGame(); });
-
-function loadLevel(index) {
-    if (!window.levels || window.levels.length === 0) {
-        alert("Error: No level scripts found! Make sure you added <script src='level1.js'></script>");
-        return;
-    }
-
-    let targetLevel = window.levels[index]; 
-    level = targetLevel.map.map(row => [...row]); 
-    player = { x: targetLevel.player.x, y: targetLevel.player.y };
-    hasKey = false;
-    hasExtinguisher = false; 
-    wolves = [];
-
-    for(let y = 0; y < level.length; y++) {
-        for(let x = 0; x < level[y].length; x++) {
-            if(level[y][x] === 8) {
-                wolves.push({x: x, y: y, dir: (Math.random() > 0.5 ? 1 : -1)}); 
-                level[y][x] = 0; 
-            }
-        }
-    }
-
-    gameState = "PLAYING";
-    updateHUD();
-    document.getElementById('uiLayer').style.display = 'none';
-    document.getElementById('mainMenu').style.display = 'none';
-    document.getElementById('messageScreen').style.display = 'none';
-    document.getElementById('btnPause').style.display = 'block';
-    document.getElementById('hud').style.display = 'block';
-}
-
-function startGame() { 
-    let el = document.documentElement;
-    if (el.requestFullscreen) { el.requestFullscreen(); }
-    else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
-    
-    lives = 3; // Reset lives on fresh start
-    currentLevelIndex = 0; 
-    loadLevel(currentLevelIndex); 
-}
-
-// --- GAMEPLAY LOGIC ---
-function blowOutFires() {
-    if (!hasExtinguisher) return;
-    const directions = [[0,-1], [0,1], [-1,0], [1,0]];
-    for (let d of directions) {
-        let checkX = player.x + d[0]; let checkY = player.y + d[1];
-        if (checkY >= 0 && checkY < level.length && checkX >= 0 && checkX < level[0].length) {
-            if (level[checkY][checkX] === 7) level[checkY][checkX] = 0; 
-        }
-    }
-}
-
-function updateCamera() {
-    let mapW = level[0].length, mapH = level.length;
-    camX = Math.max(0, Math.min(player.x - 8, mapW - 16));
-    camY = Math.max(0, Math.min(player.y - 4, mapH - 9));
-}
-
-function move(dx, dy) {
-    if (gameState !== "PLAYING") return;
-    let nx = player.x + dx, ny = player.y + dy;
-    if(ny < 0 || ny >= level.length || nx < 0 || nx >= level[0].length) return;
-
-    for(let w of wolves) {
-        if(w.x === nx && w.y === ny) { handleDeath("Wolf Attack!"); return; }
-    }
-
-    let target = level[ny][nx];
-    if (target === 1) return; 
-    if (target === 7) { handleDeath("Burned!"); return; }
-    
-    if (target === 3 && dy === 0) {
-        if (level[ny][nx+dx] === 0) { level[ny][nx+dx]=3; level[ny][nx]=0; } else return;
-    } else if (target === 3) return; 
-
-    if (target === 4) {
-        if(hasKey) { gameState = "LEVEL_CLEAR"; showScreen("AREA SECURED!", "PROCEED TO NEXT", "NEXT", true); return; } 
-        else return; 
-    }
-    
-    if (target === 6) hasKey = true;
-    if (target === 9) hasExtinguisher = true;
-
-    level[ny][nx] = 0; 
-    player.x = nx; 
-    player.y = ny;
-    blowOutFires();
-}
-
-function updatePhysics() {
-    if (gameState !== "PLAYING") return;
-    tickCounter++;
-    let mapW = level[0].length, mapH = level.length;
-
-    for (let y = mapH - 2; y >= 0; y--) {
-        for (let x = 0; x < mapW; x++) {
-            if (level[y][x] === 3 && level[y+1][x] === 0) {
-                level[y][x] = 0; level[y+1][x] = 3;
-                if (player.x === x && player.y === y + 1) { handleDeath("Crushed!"); }
-            }
-        }
-    }
-    
-    if(tickCounter % 3 === 0) { 
-        for(let w of wolves) {
-            let nx = w.x + w.dir;
-            if(nx < 0 || nx >= mapW || [1,3,4,6,7,9].includes(level[w.y][nx])) {
-                w.dir *= -1; nx = w.x + w.dir;
-            }
-            w.x = nx;
-            if(w.x === player.x && w.y === player.y) { handleDeath("Wolf Attack!"); }
-        }
-    }
-}
-
-function draw() {
-    if(gameState === "MENU" || gameState === "INTRO") return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateCamera();
-
-    for (let y = 0; y < 9; y++) {
-        for (let x = 0; x < 16; x++) {
-            let mapX = camX + x, mapY = camY + y;
-            if(mapY >= level.length || mapX >= level[0].length) continue;
-
-            let t = level[mapY][mapX];
-            let px = x * TILE_SIZE, py = y * TILE_SIZE;
-
-            if (t === 1) drawSprite(40, 0, px, py);
-            if (t === 2) drawSprite(0, 0, px, py);
-            if (t === 3) drawSprite(80, 0, px, py);
-            if (t === 4) drawSprite(120, 0, px, py); 
-            if (t === 6) drawSprite(0, 40, px, py); 
-            if (t === 7) drawSprite(40, 40, px, py); 
-            if (t === 9) drawSprite(0, 80, px, py); 
-            
-            if (t === 4 && hasKey) { ctx.fillStyle = "#4ade80"; ctx.fillRect(px+15, py+15, 10, 10); }
-        }
-    }
-    
-    for(let w of wolves) {
-        let drawX = (w.x - camX) * TILE_SIZE, drawY = (w.y - camY) * TILE_SIZE;
-        if(drawX >= -TILE_SIZE && drawX <= canvas.width && drawY >= -TILE_SIZE && drawY <= canvas.height) drawSprite(80, 40, drawX, drawY);
-    }
-
-    let drawPlayerX = (player.x - camX) * TILE_SIZE, drawPlayerY = (player.y - camY) * TILE_SIZE;
-    if(drawPlayerX >= 0 && drawPlayerX < canvas.width && drawPlayerY >= 0 && drawPlayerY < canvas.height) {
-        drawSprite(120, 40, drawPlayerX, drawPlayerY);
-        if (hasExtinguisher) { ctx.fillStyle = "#e53935"; ctx.fillRect(drawPlayerX + 30, drawPlayerY + 10, 8, 12); }
-    }
-}
-
-window.addEventListener('keydown', e => {
-    if(e.key === 'ArrowUp' || e.key === 'w') move(0,-1);
-    if(e.key === 'ArrowDown' || e.key === 's') move(0,1);
-    if(e.key === 'ArrowLeft' || e.key === 'a') move(-1,0);
-    if(e.key === 'ArrowRight' || e.key === 'd') move(1,0);
-    if(e.key === 'Escape' || e.key === 'p') pauseGame();
-});
-
-const attachBtn = (id, dx, dy) => {
-    const btn = document.getElementById(id);
-    const trigger = (e) => { e.preventDefault(); move(dx, dy); };
-    btn.addEventListener('touchstart', trigger, {passive: false});
-    btn.addEventListener('mousedown', trigger);
-};
-attachBtn('up', 0, -1); attachBtn('down', 0, 1); attachBtn('left', -1, 0); attachBtn('right', 1, 0);
-
-setInterval(() => { updatePhysics(); draw(); }, 100);
-
-function resize() {
-    let scale = Math.min(window.innerWidth / 640, window.innerHeight / 360);
-    let container = document.getElementById('gameContainer');
-    container.style.width = (640 * scale) + "px"; container.style.height = (360 * scale) + "px";
-}
-window.onresize = resize; resize();
-</script>
 </body>
 </html>
