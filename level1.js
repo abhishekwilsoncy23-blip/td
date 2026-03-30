@@ -12,5 +12,5 @@ window.GAME_LEVELS.push({
         { text: '+50', op: 'add', val: 50, x: -2.5, z: -280 },
         { text: '-50', op: 'sub', val: 50, x: 2.5,  z: -280 }
     ],
-    boss: { hp: 70, z: -500 }
+    boss: { hp: 50, z: -500 }
 });
