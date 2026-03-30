@@ -1,7 +1,7 @@
 window.GAME_LEVELS = window.GAME_LEVELS || [];
 
 window.GAME_LEVELS.push({
-    trackLength: 400,
+    trackLength: 600,
     runSpeed: 0.35,
     startAmmo: 20,
     gates: [
@@ -12,5 +12,5 @@ window.GAME_LEVELS.push({
         { text: '+50', op: 'add', val: 50, x: -2.5, z: -280 },
         { text: '-50', op: 'sub', val: 50, x: 2.5,  z: -280 }
     ],
-    boss: { hp: 70, z: -480 }
+    boss: { hp: 70, z: -500 }
 });
